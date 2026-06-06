@@ -70,7 +70,7 @@ func (s *Store) CreateDrone(ctx context.Context, id int) error {
 			},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyAlways,
+			RestartPolicy: corev1.RestartPolicyNever,
 			ImagePullSecrets: []corev1.LocalObjectReference{
 				{Name: "ghcr-pull"},
 			},

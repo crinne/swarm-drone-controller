@@ -79,8 +79,8 @@ func TestCreateDroneBuildsExpectedPod(t *testing.T) {
 	if !reflect.DeepEqual(pod.Labels, wantLabels) {
 		t.Fatalf("labels = %v, want %v", pod.Labels, wantLabels)
 	}
-	if pod.Spec.RestartPolicy != corev1.RestartPolicyAlways {
-		t.Fatalf("restartPolicy = %q, want %q", pod.Spec.RestartPolicy, corev1.RestartPolicyAlways)
+	if pod.Spec.RestartPolicy != corev1.RestartPolicyNever {
+		t.Fatalf("restartPolicy = %q, want %q", pod.Spec.RestartPolicy, corev1.RestartPolicyNever)
 	}
 	if !reflect.DeepEqual(pod.Spec.ImagePullSecrets, []corev1.LocalObjectReference{{Name: "ghcr-pull"}}) {
 		t.Fatalf("imagePullSecrets = %v, want ghcr-pull", pod.Spec.ImagePullSecrets)
