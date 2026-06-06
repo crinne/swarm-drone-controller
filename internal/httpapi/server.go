@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/crinne/swarm-drone-controller/internal/spawn"
 )
@@ -15,9 +16,12 @@ type Spawner interface {
 
 func NewHandler(spawner Spawner, allowedOrigin string) http.Handler {
 	mux := http.NewServeMux()
+	allowedOrigins := parseAllowedOrigins(allowedOrigin)
 
-	addCORS := func(w http.ResponseWriter) {
-		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+	addCORS := func(w http.ResponseWriter, r *http.Request) {
+		if origin := corsOrigin(r.Header.Get("Origin"), allowedOrigins); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Spawn-Password")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Vary", "Origin")
@@ -72,11 +76,38 @@ func NewHandler(spawner Spawner, allowedOrigin string) http.Handler {
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		addCORS(w)
+		addCORS(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		mux.ServeHTTP(w, r)
 	})
+}
+
+func parseAllowedOrigins(value string) []string {
+	parts := strings.Split(value, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		origin := strings.TrimSpace(part)
+		if origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	return origins
+}
+
+func corsOrigin(requestOrigin string, allowedOrigins []string) string {
+	if requestOrigin == "" {
+		if len(allowedOrigins) == 0 {
+			return ""
+		}
+		return allowedOrigins[0]
+	}
+	for _, allowed := range allowedOrigins {
+		if requestOrigin == allowed {
+			return requestOrigin
+		}
+	}
+	return ""
 }

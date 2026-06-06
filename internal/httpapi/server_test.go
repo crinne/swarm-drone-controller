@@ -132,23 +132,40 @@ func TestHealthAndReady(t *testing.T) {
 }
 
 func TestCORSAllowsSwarmUI(t *testing.T) {
-	handler := NewHandler(&fakeSpawner{}, "https://swarmgcs.dev")
+	handler := NewHandler(&fakeSpawner{}, "https://swarmgcs.dev, https://www.swarmgcs.dev")
 
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodOptions, "/spawn", nil)
+	req.Header.Set("Origin", "https://www.swarmgcs.dev")
 	handler.ServeHTTP(res, req)
 
 	if res.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want 204", res.Code)
 	}
-	if got := res.Header().Get("Access-Control-Allow-Origin"); got != "https://swarmgcs.dev" {
-		t.Fatalf("cors origin = %q, want https://swarmgcs.dev", got)
+	if got := res.Header().Get("Access-Control-Allow-Origin"); got != "https://www.swarmgcs.dev" {
+		t.Fatalf("cors origin = %q, want https://www.swarmgcs.dev", got)
 	}
 	if got := res.Header().Get("Access-Control-Allow-Headers"); got != "Content-Type, X-Spawn-Password" {
 		t.Fatalf("cors headers = %q, want Content-Type, X-Spawn-Password", got)
 	}
 	if got := res.Header().Get("Access-Control-Allow-Methods"); got != "POST, OPTIONS" {
 		t.Fatalf("cors methods = %q, want POST, OPTIONS", got)
+	}
+}
+
+func TestCORSRejectsUnknownOrigin(t *testing.T) {
+	handler := NewHandler(&fakeSpawner{}, "https://swarmgcs.dev, https://www.swarmgcs.dev")
+
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodOptions, "/spawn", nil)
+	req.Header.Set("Origin", "https://example.com")
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204", res.Code)
+	}
+	if got := res.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("cors origin = %q, want empty", got)
 	}
 }
 
